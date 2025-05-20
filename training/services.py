@@ -173,12 +173,31 @@ class TrainingPlanGenerator:
         - 'progress_metrics': dict with performance data
         This method modifies the plan accordingly.
         """
-        # For demonstration, just print feedback and return
-        print("Received feedback for dynamic adjustment:", feedback)
-        # Real implementation would adjust sets, reps, exercises, or schedule
-        # Example: reduce volume if perceived effort is high or missed sessions > threshold
-        # This requires access to current plan state, which can be stored in the instance
-        pass
+        missed_sessions = feedback.get('missed_sessions', 0)
+        perceived_effort = feedback.get('perceived_effort', 0.5)
+        progress_metrics = feedback.get('progress_metrics', {})
+
+        # Example logic: reduce volume if perceived effort is high or missed sessions exceed threshold
+        volume_adjustment_factor = 1.0
+        if missed_sessions > 2:
+            volume_adjustment_factor -= 0.2
+        if perceived_effort > 0.8:
+            volume_adjustment_factor -= 0.3
+
+        # Adjust exercises in the current plan sessions
+        for session in self.training_history:
+            for ex in session.get('exercises', []):
+                original_sets = ex.get('sets', 4)
+                original_reps = ex.get('reps', 8)
+                adjusted_sets = max(1, int(original_sets * volume_adjustment_factor))
+                adjusted_reps = max(1, int(original_reps * volume_adjustment_factor))
+                ex['sets'] = adjusted_sets
+                ex['reps'] = adjusted_reps
+
+        # Optionally, add logic to add/remove exercises based on progress_metrics
+
+        # Return adjusted plan (assuming self.training_history is the plan representation)
+        return self.training_history
 
     def create_plan(self):
         profile_data = self.collect_profile_data()
