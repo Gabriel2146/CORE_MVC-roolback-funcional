@@ -1,46 +1,40 @@
 import requests
 from .models import WgerExercise
 
-WGER_API_URL = "https://wger.de/api/v2/exercise/"
+WGER_API_URL = 'https://wger.de/api/v2/exercise/'
 
-class WgerAPIClient:
-    def __init__(self):
-        self.session = requests.Session()
+def fetch_wger_exercises():
+    """
+    Fetch exercises from the wger API and save/update them in the local database.
+    """
+    url = WGER_API_URL
+    exercises_fetched = 0
+    while url:
+        response = requests.get(url)
+        if response.status_code != 200:
+            break
+        data = response.json()
+        for item in data.get('results', []):
+            wger_id = item.get('id')
+            name = item.get('name') or 'Unnamed Exercise'
+            category = item.get('category', {}).get('name', '') if isinstance(item.get('category'), dict) else ''
+            muscle_group = item.get('muscles', [])
+            difficulty = item.get('difficulty_level', '')
+            equipment = item.get('equipment', [])
+            # Simplify muscle_group and equipment to comma separated strings if needed
+            muscle_group_str = ','.join(str(m) for m in muscle_group) if muscle_group else ''
+            equipment_str = ','.join(str(e) for e in equipment) if equipment else ''
 
-    def fetch_exercises(self, language=2, limit=100, offset=0):
-        params = {
-            'language': language,
-            'limit': limit,
-            'offset': offset,
-            'status': 2
-        }
-        response = self.session.get(WGER_API_URL, params=params)
-        response.raise_for_status()
-        return response.json()
-
-    def sync_exercises(self):
-        offset = 0
-        limit = 100
-        while True:
-            data = self.fetch_exercises(limit=limit, offset=offset)
-            results = data.get('results', [])
-            if not results:
-                break
-            for item in results:
-                name = item.get('name', '')
-                description = item.get('description', '')
-                category = item.get('category', None)
-                equipment = item.get('equipment', [])
-
-                WgerExercise.objects.update_or_create(
-                    wger_id=item.get('id'),
-                    defaults={
-                        'name': name,
-                        'description': description,
-                        'category': category,
-                        'equipment': equipment,
-                    }
-                )
-            offset += limit
-            if not data.get('next'):
-                break
+            obj, created = WgerExercise.objects.update_or_create(
+                wger_id=wger_id,
+                defaults={
+                    'name': name,
+                    'category': category,
+                    'muscle_group': muscle_group_str,
+                    'difficulty': difficulty,
+                    'equipment': equipment_str
+                }
+            )
+            exercises_fetched += 1
+        url = data.get('next')
+    return exercises_fetched

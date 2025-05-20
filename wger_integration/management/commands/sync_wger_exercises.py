@@ -1,11 +1,9 @@
 from django.core.management.base import BaseCommand
-from wger_integration.services import WgerAPIClient
+from wger_integration.services import fetch_wger_exercises
 
 class Command(BaseCommand):
-    help = 'Sync exercises from wger API into local database'
+    help = 'Sync exercises from the wger API'
 
     def handle(self, *args, **options):
-        client = WgerAPIClient()
-        self.stdout.write('Starting sync of wger exercises...')
-        client.sync_exercises()
-        self.stdout.write('Sync completed successfully.')
+        count = fetch_wger_exercises()
+        self.stdout.write(self.style.SUCCESS(f'Successfully synced {count} exercises from wger API'))

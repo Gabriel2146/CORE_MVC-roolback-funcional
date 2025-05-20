@@ -61,10 +61,10 @@ class TrainingPlanGenerator:
     def calculate_effectiveness_index(self, plan):
         """
         Calculate a realistic effectiveness index considering:
-        - Fatigue: estimated from recent sessions volume
+        - Fatigue: estimated from recent sessions volume and physiological response
         - Compatibility: match of exercises with objectives and restrictions
         - Variation: diversity of exercises and muscle groups
-        - Progression: alignment with expected progression curve
+        - Progression: alignment with expected progression curve and real progress
         Returns a float between 0 and 1.
         """
         fatigue_score = 0.0
@@ -72,14 +72,18 @@ class TrainingPlanGenerator:
         variation_score = 0.0
         progression_score = 0.0
 
-        # Estimate fatigue from last 7 days sessions volume
+        # Estimate fatigue from last 7 days sessions volume and physiological response
         recent_sessions = [s for s in self.training_history if (datetime.now().date() - s['date']).days <= 7]
         total_volume = 0
+        perceived_efforts = []
         for session in recent_sessions:
             for ex in session.get('exercises', []):
                 volume = ex.get('sets', 0) * ex.get('reps', 0)
                 total_volume += volume
-        fatigue_score = max(0, 1 - total_volume / 100)  # simplistic fatigue model
+            if 'perceived_effort' in session:
+                perceived_efforts.append(session['perceived_effort'])
+        avg_perceived_effort = sum(perceived_efforts) / len(perceived_efforts) if perceived_efforts else 0.5
+        fatigue_score = max(0, 1 - total_volume / 100) * (1 - avg_perceived_effort)  # combined fatigue model
 
         # Compatibility: check exercises against restrictions and objectives
         restrictions = self.user_profile.restrictions if hasattr(self.user_profile, 'restrictions') else []
@@ -89,7 +93,7 @@ class TrainingPlanGenerator:
         for session in plan.get('sessions', []):
             for ex in session.get('exercises', []):
                 total_exercises += 1
-                # simplistic compatibility check: exclude exercises with restricted keywords
+                # exclude exercises with restricted keywords
                 if not any(r.lower() in ex['name'].lower() for r in restrictions):
                     if objective_type in ex['name'].lower() or objective_type == '':
                         compatible_exercises += 1
@@ -97,21 +101,31 @@ class TrainingPlanGenerator:
 
         # Variation: count unique exercises and muscle groups (if available)
         unique_exercises = set()
+        unique_muscle_groups = set()
         for session in plan.get('sessions', []):
             for ex in session.get('exercises', []):
                 unique_exercises.add(ex['name'])
-        variation_score = min(1.0, len(unique_exercises) / 10)  # target at least 10 unique exercises
+                muscle_group = ex.get('muscle_group')
+                if muscle_group:
+                    unique_muscle_groups.add(muscle_group)
+        variation_score = min(1.0, (len(unique_exercises) + len(unique_muscle_groups)) / 20)  # target at least 20 unique items
 
-        # Progression: simplistic check comparing planned volume increase over sessions
+        # Progression: compare planned volume increase over sessions with real progress metrics
         volumes = []
+        real_progress = []
         for session in plan.get('sessions', []):
             vol = 0
             for ex in session.get('exercises', []):
                 vol += ex.get('sets', 0) * ex.get('reps', 0)
             volumes.append(vol)
+            # Assume progress_metrics available in session for real progress
+            real_progress.append(session.get('progress_metric', 0))
         progression_score = 0.0
         if len(volumes) > 1:
-            progression_score = sum(max(0, volumes[i+1] - volumes[i]) for i in range(len(volumes)-1)) / (len(volumes)-1) / max(volumes)
+            planned_increases = [max(0, volumes[i+1] - volumes[i]) for i in range(len(volumes)-1)]
+            avg_planned_increase = sum(planned_increases) / len(planned_increases) if planned_increases else 0
+            avg_real_progress = sum(real_progress) / len(real_progress) if real_progress else 0
+            progression_score = min(1.0, avg_real_progress / (avg_planned_increase + 1e-5))  # avoid div by zero
 
         # Weighted sum of factors
         effectiveness = (0.3 * fatigue_score +

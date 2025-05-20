@@ -44,4 +44,32 @@ describe('AnalysisDashboard.vue', () => {
     await wrapper.vm.$nextTick()
     expect(axios.get).toHaveBeenCalledWith('http://localhost:8000/api/training-plans/?user=2')
   })
+
+  it('renders progress chart with correct data', async () => {
+    // Mock renderProgressChart method to test data passed
+    const renderProgressChartMock = jest.fn()
+    wrapper.vm.renderProgressChart = renderProgressChartMock
+    await wrapper.vm.fetchProgressData()
+    expect(renderProgressChartMock).toHaveBeenCalled()
+    const [labels, dataPoints] = renderProgressChartMock.mock.calls[0]
+    expect(labels).toEqual(['2023-01-01', '2023-01-02'])
+    expect(dataPoints).toEqual([2, 1])
+  })
+
+  it('handles error when fetching athletes', async () => {
+    axios.get.mockRejectedValueOnce(new Error('Network Error'))
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    await wrapper.vm.fetchAthletes()
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error fetching athletes:', expect.any(Error))
+    consoleErrorSpy.mockRestore()
+  })
+
+  it('handles error when fetching progress data', async () => {
+    axios.get.mockRejectedValueOnce(new Error('Network Error'))
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    wrapper.vm.selectedAthlete = 1
+    await wrapper.vm.fetchProgressData()
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error fetching progress data:', expect.any(Error))
+    consoleErrorSpy.mockRestore()
+  })
 })
