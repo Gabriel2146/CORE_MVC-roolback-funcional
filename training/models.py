@@ -27,6 +27,8 @@ class TrainingSession(models.Model):
     training_plan = models.ForeignKey(TrainingPlan, on_delete=models.CASCADE, related_name='sessions')
     date = models.DateField()
     notes = models.TextField(blank=True)
+    total_duration = models.DurationField(null=True, blank=True)
+    perceived_effort = models.FloatField(null=True, blank=True, help_text="Perceived effort for the session (0-1 scale)")
 
     def __str__(self):
         return f"Session on {self.date} for {self.training_plan.name}"
@@ -37,6 +39,8 @@ class ExerciseEntry(models.Model):
     sets = models.IntegerField(default=0)
     reps = models.IntegerField(default=0)
     weight = models.FloatField(default=0.0)
+    rest_time = models.DurationField(null=True, blank=True, help_text="Rest time after exercise")
+    perceived_effort = models.FloatField(null=True, blank=True, help_text="Perceived effort for the exercise (0-1 scale)")
 
     def __str__(self):
         return f"{self.exercise.name} in session {self.session.id}"
