@@ -8,6 +8,7 @@ import Athlete from '../components/Athlete.vue'
 import Guest from '../components/Guest.vue'
 import TrainingPlanList from '../components/TrainingPlanList.vue'
 import TrainingPlanCreate from '../components/TrainingPlanCreate.vue'
+import AnalysisDashboard from '../components/AnalysisDashboard.vue'
 
 const routes = [
   {
@@ -72,6 +73,12 @@ const routes = [
     path: '/training-plan/create',
     name: 'TrainingPlanCreate',
     component: TrainingPlanCreate,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/analysis',
+    name: 'AnalysisDashboard',
+    component: AnalysisDashboard,
     meta: { requiresAuth: true }
   }
 ]
