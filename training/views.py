@@ -5,7 +5,7 @@ from .models import Exercise, TrainingPlan, TrainingSession, ExerciseEntry
 from .serializers import ExerciseSerializer, TrainingPlanSerializer, TrainingSessionSerializer, ExerciseEntrySerializer
 from .services import TrainingPlanGenerator
 from users.permissions import IsAdmin, IsTrainer, IsAthlete, IsGuest
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 class ExerciseViewSet(viewsets.ModelViewSet):
     queryset = Exercise.objects.all()
@@ -14,7 +14,7 @@ class ExerciseViewSet(viewsets.ModelViewSet):
 
 class TrainingPlanViewSet(viewsets.ModelViewSet):
     serializer_class = TrainingPlanSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # Cambiado para permitir acceso sin autenticación temporalmente
 
     def get_queryset(self):
         user = self.request.user
@@ -32,7 +32,7 @@ class TrainingPlanViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-    @action(detail=False, methods=['post'], permission_classes=[IsTrainer])
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny])  # Cambiado para permitir acceso sin autenticación temporalmente
     def generate(self, request):
         user_profile = request.data.get('user_profile')
         training_history = request.data.get('training_history')

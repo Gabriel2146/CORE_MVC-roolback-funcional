@@ -41,7 +41,8 @@ class TrainingPlanGenerator:
             selected_exercises.append({
                 "name": exercise.name,
                 "sets": 4,
-                "reps": 8
+                "reps": 8,
+                "source": "wger" if isinstance(exercise, WgerExercise) else "local"
             })
 
         sessions = []

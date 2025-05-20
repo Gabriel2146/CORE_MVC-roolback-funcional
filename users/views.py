@@ -10,10 +10,22 @@ class UserRegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = UserRegisterSerializer
 
+from rest_framework.permissions import BasePermission
+
+class IsAdminOrTrainer(BasePermission):
+    def has_permission(self, request, view):
+        return request.user and (request.user.role == 'admin' or request.user.role == 'trainer')
+
 class UserListView(generics.ListAPIView):
-    queryset = User.objects.all()
-    permission_classes = [permissions.IsAdminUser]
     serializer_class = UserSerializer
+    permission_classes = [IsAdminOrTrainer]
+
+    def get_queryset(self):
+        queryset = User.objects.all()
+        role = self.request.query_params.get('role', None)
+        if role:
+            queryset = queryset.filter(role=role)
+        return queryset
 
 class UserProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]

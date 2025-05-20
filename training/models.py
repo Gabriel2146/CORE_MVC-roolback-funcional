@@ -27,7 +27,7 @@ class TrainingPlan(models.Model):
     progression_index = models.FloatField(null=True, blank=True, help_text="Progression index for the plan (0-1 scale)")
 
     def __str__(self):
-        return f"{self.name} for {self.user.username}"
+        return f"{self.name} for {self.user.get_username()}"
 
 class TrainingSession(models.Model):
     training_plan = models.ForeignKey(TrainingPlan, on_delete=models.CASCADE, related_name='sessions')
@@ -58,4 +58,4 @@ class ExerciseEntry(models.Model):
     time_under_tension = models.DurationField(null=True, blank=True, help_text="Time under tension for the exercise")
 
     def __str__(self):
-        return f"{self.exercise.name} in session {self.session.id}"
+        return f"{self.exercise.name} in session {self.session.pk}"
